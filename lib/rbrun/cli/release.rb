@@ -30,8 +30,10 @@ module Rbrun
       option :env, type: :string, default: "production", desc: "Environment"
       def destroy
         load_rails!
-        release = find_release!
-        puts "Destroying #{release.environment} release..."
+        # Find any release with infrastructure, not just deployed ones
+        release = Rbrun::Release.where(environment: options[:env]).where.not(server_ip: nil).last
+        abort "No release with infrastructure for environment: #{options[:env]}" unless release
+        puts "Destroying #{release.environment} release (ID: #{release.id})..."
         release.deprovision!
         release.mark_torn_down!
         puts "Done."
@@ -41,9 +43,14 @@ module Rbrun
       option :env, type: :string, default: "production", desc: "Environment"
       def ssh
         load_rails!
-        release = find_release!
+        release = find_release_with_infra!
         abort "No server IP" unless release.server_ip
-        exec "ssh deploy@#{release.server_ip}"
+
+        # Write key to temp file and SSH with it
+        key_file = "/tmp/rbrun_#{release.environment}_key"
+        File.write(key_file, release.ssh_private_key)
+        File.chmod(0600, key_file)
+        exec "ssh -i #{key_file} -o StrictHostKeyChecking=no deploy@#{release.server_ip}"
       end
 
       desc "logs", "Show pod logs"
@@ -93,6 +100,12 @@ module Rbrun
         def find_release!
           release = Rbrun::Release.deployed.where(environment: options[:env]).last
           abort "No deployed release for environment: #{options[:env]}" unless release
+          release
+        end
+
+        def find_release_with_infra!
+          release = Rbrun::Release.where(environment: options[:env]).where.not(server_ip: nil).last
+          abort "No release with infrastructure for environment: #{options[:env]}" unless release
           release
         end
 
