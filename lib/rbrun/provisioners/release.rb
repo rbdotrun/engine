@@ -46,11 +46,12 @@ module Rbrun
 
       def repo_sync_command(workspace_exists:)
         clone_url = "https://#{config.git_config.pat}@github.com/#{config.git_config.repo}.git"
+        branch = release.branch
 
         if workspace_exists
-          ["pull", "cd #{WORKSPACE} && git pull"]
+          ["pull", "cd #{WORKSPACE} && git fetch origin && git checkout #{branch} && git pull origin #{branch}"]
         else
-          ["clone", "git clone #{Shellwords.escape(clone_url)} #{WORKSPACE}"]
+          ["clone", "git clone --branch #{branch} #{Shellwords.escape(clone_url)} #{WORKSPACE}"]
         end
       end
 
@@ -61,7 +62,11 @@ module Rbrun
         end
 
         def prefix
-          Naming.release_prefix
+          @prefix ||= Naming.release_prefix(config.git_config.app_name, release.environment)
+        end
+
+        def target
+          release.environment.to_sym
         end
 
         def zone
@@ -125,7 +130,7 @@ module Rbrun
 
         def create_server!(firewall_id:, network_id:)
           user_data = Providers::CloudInit.generate(ssh_public_key: release.ssh_public_key)
-          server_type = config.resolve(config.compute_config.server_type, target: :release)
+          server_type = config.resolve(config.compute_config.server_type, target:)
 
           compute_client.find_or_create_server(
             name: prefix,
@@ -191,7 +196,7 @@ module Rbrun
           location = server.location.split("-").first
 
           config.database_configs.each do |type, db_config|
-            volume_size = config.resolve(db_config.volume_size, target: :release)
+            volume_size = config.resolve(db_config.volume_size, target:)
             next unless volume_size
 
             log_step("volume_#{type}")
@@ -366,6 +371,7 @@ module Rbrun
             config,
             prefix:,
             zone:,
+            target:,
             db_password: existing_db_password || SecureRandom.hex(16),
             registry_tag: @build_result&.dig(:registry_tag),
             tunnel_token: @tunnel_token

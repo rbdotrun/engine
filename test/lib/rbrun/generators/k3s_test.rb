@@ -18,7 +18,7 @@ module Rbrun
       test "generates MEILISEARCH_URL for meilisearch service" do
         @config.service(:meilisearch)
 
-        generator = K3s.new(@config, prefix: "test", zone: "example.com")
+        generator = K3s.new(@config, target: :production, prefix: "test", zone: "example.com")
         manifests = generator.generate
 
         assert_includes manifests, "MEILISEARCH_URL"
@@ -29,7 +29,7 @@ module Rbrun
       test "generates REDIS_URL with redis protocol for redis service" do
         @config.service(:redis)
 
-        generator = K3s.new(@config, prefix: "test", zone: "example.com")
+        generator = K3s.new(@config, target: :production, prefix: "test", zone: "example.com")
         manifests = generator.generate
 
         assert_includes manifests, "REDIS_URL"
@@ -41,7 +41,7 @@ module Rbrun
         @config.service(:redis)
         @config.service(:meilisearch)
 
-        generator = K3s.new(@config, prefix: "myapp", zone: "example.com")
+        generator = K3s.new(@config, target: :production, prefix: "myapp", zone: "example.com")
         manifests = generator.generate
 
         assert_includes manifests, "REDIS_URL"
@@ -57,7 +57,7 @@ module Rbrun
       test "creates per-service secret when env vars defined" do
         @config.service(:meilisearch) { |m| m.env = { MEILI_MASTER_KEY: "secret123" } }
 
-        generator = K3s.new(@config, prefix: "test", zone: "example.com")
+        generator = K3s.new(@config, target: :production, prefix: "test", zone: "example.com")
         manifests = generator.generate
 
         assert_includes manifests, "test-meilisearch-secret"
@@ -67,7 +67,7 @@ module Rbrun
       test "does not create service secret when no env vars" do
         @config.service(:redis)
 
-        generator = K3s.new(@config, prefix: "test", zone: "example.com")
+        generator = K3s.new(@config, target: :production, prefix: "test", zone: "example.com")
         manifests = generator.generate
 
         refute_includes manifests, "test-redis-secret"
@@ -76,7 +76,7 @@ module Rbrun
       test "service container references its own secret via envFrom" do
         @config.service(:meilisearch) { |m| m.env = { MEILI_MASTER_KEY: "key" } }
 
-        generator = K3s.new(@config, prefix: "test", zone: "example.com")
+        generator = K3s.new(@config, target: :production, prefix: "test", zone: "example.com")
         manifests = generator.generate
 
         assert_includes manifests, "secretRef"
@@ -90,7 +90,7 @@ module Rbrun
       test "generates DATABASE_URL for postgres database" do
         @config.database(:postgres)
 
-        generator = K3s.new(@config, prefix: "app", zone: "example.com", db_password: "testpw")
+        generator = K3s.new(@config, target: :production, prefix: "app", zone: "example.com", db_password: "testpw")
         manifests = generator.generate
 
         assert_includes manifests, "DATABASE_URL"
@@ -101,7 +101,7 @@ module Rbrun
       test "generates individual POSTGRES_* env vars" do
         @config.database(:postgres)
 
-        generator = K3s.new(@config, prefix: "app", zone: "example.com", db_password: "pw")
+        generator = K3s.new(@config, target: :production, prefix: "app", zone: "example.com", db_password: "pw")
         manifests = generator.generate
 
         assert_includes manifests, "POSTGRES_HOST"
@@ -120,7 +120,7 @@ module Rbrun
           a.process(:web) { |p| p.port = 3000 }
         end
 
-        generator = K3s.new(@config, prefix: "myapp", zone: "example.com", registry_tag: "localhost:5000/app:v1")
+        generator = K3s.new(@config, target: :production, prefix: "myapp", zone: "example.com", registry_tag: "localhost:5000/app:v1")
         manifests = generator.generate
 
         assert_includes manifests, "myapp-web"
@@ -132,7 +132,7 @@ module Rbrun
           a.process(:worker) { |p| p.command = "bin/jobs" }
         end
 
-        generator = K3s.new(@config, prefix: "myapp", zone: "example.com", registry_tag: "localhost:5000/app:v1")
+        generator = K3s.new(@config, target: :production, prefix: "myapp", zone: "example.com", registry_tag: "localhost:5000/app:v1")
         manifests = generator.generate
 
         assert_includes manifests, "myapp-worker"
@@ -147,7 +147,7 @@ module Rbrun
           end
         end
 
-        generator = K3s.new(@config, prefix: "myapp", zone: "example.com", registry_tag: "localhost:5000/app:v1")
+        generator = K3s.new(@config, target: :production, prefix: "myapp", zone: "example.com", registry_tag: "localhost:5000/app:v1")
         manifests = generator.generate
 
         assert_includes manifests, "kind: Ingress"
@@ -159,7 +159,7 @@ module Rbrun
       # ─────────────────────────────────────────────────────────────
 
       test "generates cloudflared deployment when tunnel_token provided" do
-        generator = K3s.new(@config, prefix: "myapp", zone: "example.com", tunnel_token: "cf-token-123")
+        generator = K3s.new(@config, target: :production, prefix: "myapp", zone: "example.com", tunnel_token: "cf-token-123")
         manifests = generator.generate
 
         assert_includes manifests, "myapp-cloudflared"
@@ -168,14 +168,14 @@ module Rbrun
       end
 
       test "cloudflared uses hostNetwork" do
-        generator = K3s.new(@config, prefix: "myapp", zone: "example.com", tunnel_token: "token")
+        generator = K3s.new(@config, target: :production, prefix: "myapp", zone: "example.com", tunnel_token: "token")
         manifests = generator.generate
 
         assert_includes manifests, "hostNetwork: true"
       end
 
       test "does not generate cloudflared without tunnel_token" do
-        generator = K3s.new(@config, prefix: "myapp", zone: "example.com")
+        generator = K3s.new(@config, target: :production, prefix: "myapp", zone: "example.com")
         manifests = generator.generate
 
         refute_includes manifests, "cloudflared"

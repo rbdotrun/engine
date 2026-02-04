@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_02_03_000001) do
+ActiveRecord::Schema[8.1].define(version: 2026_02_04_000001) do
   create_table "rbrun_claude_sessions", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.text "git_diff"
@@ -59,8 +59,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_03_000001) do
   end
 
   create_table "rbrun_releases", force: :cascade do |t|
+    t.string "branch", default: "main", null: false
     t.datetime "created_at", null: false
     t.datetime "deployed_at"
+    t.string "environment", default: "production", null: false
     t.text "last_error"
     t.string "ref"
     t.string "registry_tag"
@@ -71,6 +73,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_03_000001) do
     t.string "state", default: "pending", null: false
     t.string "tunnel_id"
     t.datetime "updated_at", null: false
+    t.index ["environment"], name: "index_rbrun_releases_on_environment"
     t.index ["state"], name: "index_rbrun_releases_on_state"
   end
 

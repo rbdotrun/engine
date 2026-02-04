@@ -10,10 +10,11 @@ module Rbrun
     class K3s
       NAMESPACE = "default"
 
-      def initialize(config, prefix:, zone:, db_password: nil, registry_tag: nil, tunnel_token: nil)
+      def initialize(config, prefix:, zone:, target:, db_password: nil, registry_tag: nil, tunnel_token: nil)
         @config = config
         @prefix = prefix
         @zone = zone
+        @target = target
         @db_password = db_password || SecureRandom.hex(16)
         @registry_tag = registry_tag
         @tunnel_token = tunnel_token
@@ -263,7 +264,7 @@ module Rbrun
         # ─────────────────────────────────────────────────────────────
 
         def resolve(value)
-          @config.resolve(value, target: :release)
+          @config.resolve(value, target: @target)
         end
 
         # ─────────────────────────────────────────────────────────────

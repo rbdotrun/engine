@@ -21,6 +21,7 @@ module Rbrun
     scope :deploying, -> { where(state: "deploying") }
     scope :deployed, -> { where(state: "deployed") }
     scope :failed, -> { where(state: "failed") }
+    scope :for_environment, ->(env) { where(environment: env) }
 
     def pending? = state == "pending"
     def deploying? = state == "deploying"
@@ -33,15 +34,20 @@ module Rbrun
     # ─────────────────────────────────────────────────────────────
 
     class << self
-      def deploy!(ref: nil)
-        release = create!(ref:)
+      def deploy!(environment: "production", branch: "main")
+        release = create!(environment:, branch:)
         release.provision!
         release
       end
 
-      def current
-        deployed.order(deployed_at: :desc).first
+      def current(environment: "production")
+        deployed.for_environment(environment).order(deployed_at: :desc).first
       end
+    end
+
+    # Resource prefix for this release (e.g., "myapp-production")
+    def prefix
+      Naming.release_prefix(Rbrun.configuration.git_config.app_name, environment)
     end
 
     # ─────────────────────────────────────────────────────────────

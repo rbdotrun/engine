@@ -6,7 +6,6 @@ module Rbrun
   # Slugs are 6 lowercase hex characters (e.g., "a1b2c3").
   module Naming
     PREFIX = "rbrun-sandbox"
-    RELEASE_PREFIX = "rbrun-release"
     SLUG_LENGTH = 6
     SLUG_REGEX = /\A[a-f0-9]{#{SLUG_LENGTH}}\z/
 
@@ -56,10 +55,10 @@ module Rbrun
       end
 
       # Release K8s resource prefix for deployments, services, etc.
-      # Caller: Release::KubernetesOps, Generators::Kubernetes.
-      # All release K8s resources are prefixed with this.
-      def release_prefix
-        RELEASE_PREFIX
+      # Caller: Release provisioner, Generators::K3s.
+      # Format: appname-environment (e.g., "myapp-staging", "myapp-production")
+      def release_prefix(app_name, environment)
+        "#{app_name}-#{environment}"
       end
 
       # Regex to extract slug from resource name.

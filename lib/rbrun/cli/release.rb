@@ -8,77 +8,89 @@ module Rbrun
       end
 
       desc "deploy", "Deploy to production via K3s"
+      option :env, type: :string, default: "production", desc: "Environment (staging, production, etc.)"
+      option :branch, type: :string, default: "main", desc: "Git branch to deploy"
       def deploy
         load_rails!
-        release = Rbrun::Release.create!
-        puts "Release: #{release.id}"
+        env = options[:env].to_sym
+        Rbrun.configuration.validate_for_target!(env)
+
+        release = Rbrun::Release.create!(environment: options[:env], branch: options[:branch])
+        puts "Release: #{release.id} (#{release.environment}/#{release.branch})"
         release.provision!
         puts "URL: #{release.url}"
         puts "SSH: ssh deploy@#{release.server_ip}"
       end
 
       desc "destroy", "Tear down release infrastructure"
+      option :env, type: :string, default: "production", desc: "Environment"
       def destroy
         load_rails!
-        release = Rbrun::Release.last
-        abort "No release found" unless release
-        puts "Destroying release #{release.id}..."
+        release = find_release!
+        puts "Destroying #{release.environment} release..."
         release.deprovision!
         release.mark_torn_down!
         puts "Done."
       end
 
       desc "ssh", "SSH into release server"
+      option :env, type: :string, default: "production", desc: "Environment"
       def ssh
         load_rails!
-        release = Rbrun::Release.deployed.last
-        abort "No deployed release" unless release&.server_ip
+        release = find_release!
+        abort "No server IP" unless release.server_ip
         exec "ssh deploy@#{release.server_ip}"
       end
 
       desc "logs", "Show pod logs"
+      option :env, type: :string, default: "production", desc: "Environment"
       option :process, type: :string, default: "web", desc: "Process name"
       option :tail, type: :numeric, default: 100, desc: "Number of lines"
       def logs
         load_rails!
-        release = Rbrun::Release.deployed.last
-        abort "No deployed release" unless release
+        release = find_release!
         release.logs(process: options[:process].to_sym, tail: options[:tail]) do |line|
           puts line
         end
       end
 
       desc "exec COMMAND", "Execute command in pod"
+      option :env, type: :string, default: "production", desc: "Environment"
       option :process, type: :string, default: "web", desc: "Process name"
       def exec(command)
         load_rails!
-        release = Rbrun::Release.deployed.last
-        abort "No deployed release" unless release
+        release = find_release!
         result = release.exec(command:, process: options[:process].to_sym)
         puts result.output
       end
 
       desc "scale REPLICAS", "Scale deployment"
+      option :env, type: :string, default: "production", desc: "Environment"
       option :process, type: :string, default: "web", desc: "Process name"
       def scale(replicas)
         load_rails!
-        release = Rbrun::Release.deployed.last
-        abort "No deployed release" unless release
+        release = find_release!
         release.scale(process: options[:process].to_sym, replicas: replicas.to_i)
         puts "Scaled #{options[:process]} to #{replicas} replicas."
       end
 
       desc "restart", "Restart deployment"
+      option :env, type: :string, default: "production", desc: "Environment"
       option :process, type: :string, default: "web", desc: "Process name"
       def restart
         load_rails!
-        release = Rbrun::Release.deployed.last
-        abort "No deployed release" unless release
+        release = find_release!
         release.rollout_restart(process: options[:process].to_sym)
         puts "Restarted #{options[:process]}."
       end
 
       private
+
+        def find_release!
+          release = Rbrun::Release.deployed.where(environment: options[:env]).last
+          abort "No deployed release for environment: #{options[:env]}" unless release
+          release
+        end
 
         def load_rails!
           require File.expand_path("config/environment", Dir.pwd)

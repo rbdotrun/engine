@@ -139,6 +139,20 @@ module Rbrun
     end
 
     # ─────────────────────────────────────────────────────────────
+    # Release Prefix Naming
+    # ─────────────────────────────────────────────────────────────
+
+    test ".release_prefix returns app_name-environment" do
+      assert_equal "myapp-production", Naming.release_prefix("myapp", "production")
+      assert_equal "myapp-staging", Naming.release_prefix("myapp", "staging")
+      assert_equal "insiti-qa", Naming.release_prefix("insiti", "qa")
+    end
+
+    test ".release_prefix works with symbol environment" do
+      assert_equal "myapp-production", Naming.release_prefix("myapp", :production)
+    end
+
+    # ─────────────────────────────────────────────────────────────
     # Hostname & URL Naming
     # ─────────────────────────────────────────────────────────────
 

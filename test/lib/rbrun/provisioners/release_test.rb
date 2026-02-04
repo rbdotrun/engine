@@ -27,14 +27,32 @@ module Rbrun
         assert_equal "clone", action
         assert_includes command, "git clone"
         assert_includes command, "owner/repo"
+        assert_includes command, "--branch main"
       end
 
       test "repo_sync_command returns pull when workspace exists" do
         action, command = @provisioner.repo_sync_command(workspace_exists: true)
 
         assert_equal "pull", action
-        assert_includes command, "git pull"
+        assert_includes command, "git fetch"
+        assert_includes command, "git checkout main"
+        assert_includes command, "git pull origin main"
         refute_includes command, "git clone"
+      end
+
+      test "repo_sync_command uses release branch for clone" do
+        @release.update!(branch: "feature-x")
+        action, command = @provisioner.repo_sync_command(workspace_exists: false)
+
+        assert_includes command, "--branch feature-x"
+      end
+
+      test "repo_sync_command uses release branch for pull" do
+        @release.update!(branch: "staging")
+        action, command = @provisioner.repo_sync_command(workspace_exists: true)
+
+        assert_includes command, "git checkout staging"
+        assert_includes command, "git pull origin staging"
       end
     end
   end

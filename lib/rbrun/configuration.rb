@@ -126,11 +126,14 @@ module Rbrun
     end
 
     # ─────────────────────────────────────────────────────────────
-    # Value Resolution (handles { sandbox: x, release: y } hash syntax)
+    # Value Resolution (handles { env1: x, env2: y } hash syntax)
     # ─────────────────────────────────────────────────────────────
 
     def resolve(value, target:)
-      return value unless value.is_a?(Hash) && (value.key?(:sandbox) || value.key?(:release))
+      # If not a hash with symbol keys, return as-is
+      return value unless value.is_a?(Hash) && value.keys.all?(Symbol)
+
+      # Extract target key (returns nil if missing - validation catches required values)
       value[target.to_sym]
     end
 
@@ -143,6 +146,22 @@ module Rbrun
       @compute_config.validate!
       @cloudflare_config&.validate!
       @git_config.validate!
+    end
+
+    def validate_for_target!(target)
+      errors = []
+
+      if compute_config&.server_type.is_a?(Hash) && !compute_config.server_type.key?(target)
+        errors << "compute.server_type missing key :#{target}"
+      end
+
+      env_vars.each do |key, value|
+        if value.is_a?(Hash) && value.keys.all? { |k| k.is_a?(Symbol) } && !value.key?(target)
+          errors << "env.#{key} missing key :#{target}"
+        end
+      end
+
+      raise ConfigurationError, errors.join(", ") if errors.any?
     end
 
     def cloudflare_configured?

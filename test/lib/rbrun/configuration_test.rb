@@ -166,22 +166,71 @@ module Rbrun
 
     test "#resolve returns value directly for non-hash values" do
       assert_equal "foo", @config.resolve("foo", target: :sandbox)
-      assert_equal 42, @config.resolve(42, target: :release)
+      assert_equal 42, @config.resolve(42, target: :production)
     end
 
     test "#resolve extracts sandbox value from hash" do
-      value = { sandbox: "dev", release: "prod" }
+      value = { sandbox: "dev", staging: "staging", production: "prod" }
       assert_equal "dev", @config.resolve(value, target: :sandbox)
     end
 
-    test "#resolve extracts release value from hash" do
-      value = { sandbox: "dev", release: "prod" }
-      assert_equal "prod", @config.resolve(value, target: :release)
+    test "#resolve extracts production value from hash" do
+      value = { sandbox: "dev", staging: "staging", production: "prod" }
+      assert_equal "prod", @config.resolve(value, target: :production)
     end
 
-    test "#resolve returns hash as-is if not sandbox/release keyed" do
-      value = { foo: "bar" }
-      assert_equal value, @config.resolve(value, target: :sandbox)
+    test "#resolve extracts custom environment value from hash" do
+      value = { sandbox: "dev", qa: "qa-env", production: "prod" }
+      assert_equal "qa-env", @config.resolve(value, target: :qa)
+    end
+
+    test "#resolve returns nil for missing environment" do
+      value = { sandbox: "dev", production: "prod" }
+      assert_nil @config.resolve(value, target: :staging)
+    end
+
+    # ─────────────────────────────────────────────────────────────
+    # validate_for_target! Tests
+    # ─────────────────────────────────────────────────────────────
+
+    test "#validate_for_target! passes when target exists in compute.server_type" do
+      @config.compute(:hetzner) do |h|
+        h.api_key = "test"
+        h.server_type = { sandbox: "cpx11", staging: "cpx21", production: "cpx31" }
+      end
+
+      assert_nothing_raised { @config.validate_for_target!(:staging) }
+    end
+
+    test "#validate_for_target! raises when target missing from compute.server_type" do
+      @config.compute(:hetzner) do |h|
+        h.api_key = "test"
+        h.server_type = { sandbox: "cpx11", production: "cpx31" }
+      end
+
+      error = assert_raises(Rbrun::ConfigurationError) { @config.validate_for_target!(:staging) }
+      assert_includes error.message, "compute.server_type missing key :staging"
+    end
+
+    test "#validate_for_target! raises when target missing from env_vars" do
+      @config.compute(:hetzner) do |h|
+        h.api_key = "test"
+        h.server_type = { sandbox: "cpx11", staging: "cpx21", production: "cpx31" }
+      end
+      @config.env(RAILS_ENV: { sandbox: "dev", production: "prod" })
+
+      error = assert_raises(Rbrun::ConfigurationError) { @config.validate_for_target!(:staging) }
+      assert_includes error.message, "env.RAILS_ENV missing key :staging"
+    end
+
+    test "#validate_for_target! passes for non-hash env_vars" do
+      @config.compute(:hetzner) do |h|
+        h.api_key = "test"
+        h.server_type = { sandbox: "cpx11", staging: "cpx21", production: "cpx31" }
+      end
+      @config.env(RAILS_LOG_TO_STDOUT: "true", SECRET: "abc")
+
+      assert_nothing_raised { @config.validate_for_target!(:staging) }
     end
 
     # ─────────────────────────────────────────────────────────────
@@ -233,6 +282,20 @@ module Rbrun
 
       assert_equal "github-token", @config.git_config.pat
       assert_equal "owner/repo", @config.git_config.repo
+    end
+
+    test "git_config.app_name extracts repo name from repo path" do
+      @config.git { |g| g.repo = "rbdotrun/insiti" }
+      assert_equal "insiti", @config.git_config.app_name
+    end
+
+    test "git_config.app_name handles simple repo name" do
+      @config.git { |g| g.repo = "myapp" }
+      assert_equal "myapp", @config.git_config.app_name
+    end
+
+    test "git_config.app_name returns nil when repo not set" do
+      assert_nil @config.git_config.app_name
     end
 
     # ─────────────────────────────────────────────────────────────

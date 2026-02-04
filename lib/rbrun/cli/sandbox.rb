@@ -9,6 +9,7 @@ module Rbrun
 
       desc "deploy", "Deploy development sandbox"
       option :slug, type: :string, desc: "Sandbox slug"
+      option :branch, type: :string, default: "main", desc: "Git branch to deploy"
       def deploy
         load_rails!
         sandbox = if options[:slug]
@@ -16,7 +17,8 @@ module Rbrun
         else
           Rbrun::Sandbox.create!
         end
-        puts "Sandbox: #{sandbox.slug}"
+        sandbox.update!(branch: options[:branch]) if sandbox.respond_to?(:branch=)
+        puts "Sandbox: #{sandbox.slug} (#{options[:branch]})"
         sandbox.provision!
         puts "URL: #{sandbox.preview_url}"
         puts "SSH: ssh deploy@#{sandbox.server_ip}"
