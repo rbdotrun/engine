@@ -8,8 +8,7 @@ module Rbrun
       extend ActiveSupport::Concern
 
       def provision!
-        return if deployed?
-        mark_deploying!
+        mark_deploying! unless deployed?
         provisioner.provision!
         mark_deployed!
       rescue StandardError => e
