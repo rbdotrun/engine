@@ -113,24 +113,48 @@ module Rbrun
       # Provision/Redeploy Tests
       # ─────────────────────────────────────────────────────────────
 
-      test "provision! skips infrastructure if already deployed but still applies manifests" do
+      test "provision! runs all steps even if already deployed (idempotent)" do
         @release.update!(state: "deployed")
 
-        infra_called = false
-        deploy_called = false
+        # Configure app so build_and_push_image! is called
+        Rbrun.configuration.app do |a|
+          a.process(:web) { |p| p.port = 3000 }
+        end
 
-        @provisioner.stub(:create_infrastructure!, -> { infra_called = true }) do
-          @provisioner.stub(:build_and_push_image!, -> {}) do
-            @provisioner.stub(:deploy_kubernetes!, -> { deploy_called = true }) do
-              @provisioner.stub(:wait_for_rollout!, -> {}) do
-                @provisioner.provision!
+        steps_called = []
+
+        @provisioner.stub(:create_infrastructure!, -> { steps_called << :infra }) do
+          @provisioner.stub(:install_k3s!, -> { steps_called << :k3s }) do
+            @provisioner.stub(:build_and_push_image!, -> { steps_called << :build }) do
+              @provisioner.stub(:deploy_kubernetes!, -> { steps_called << :deploy }) do
+                @provisioner.stub(:wait_for_rollout!, -> { steps_called << :rollout }) do
+                  @provisioner.provision!
+                end
               end
             end
           end
         end
 
-        refute infra_called, "create_infrastructure! should NOT be called when deployed"
-        assert deploy_called, "deploy_kubernetes! should ALWAYS be called (idempotent)"
+        assert_includes steps_called, :infra, "create_infrastructure! should be called"
+        assert_includes steps_called, :k3s, "install_k3s! should be called"
+        assert_includes steps_called, :build, "build_and_push_image! should be called"
+        assert_includes steps_called, :deploy, "deploy_kubernetes! should be called"
+        assert_includes steps_called, :rollout, "wait_for_rollout! should be called"
+      end
+
+      test "model provision! calls provisioner even when deployed" do
+        @release.update!(state: "deployed")
+
+        provisioner_called = false
+        @release.stub(:provisioner, -> {
+          mock = Minitest::Mock.new
+          mock.expect(:provision!, nil) { provisioner_called = true }
+          mock
+        }.call) do
+          @release.provision!
+        end
+
+        assert provisioner_called, "provisioner.provision! should be called even when deployed"
       end
 
       test "redeploy! raises if not deployed" do
