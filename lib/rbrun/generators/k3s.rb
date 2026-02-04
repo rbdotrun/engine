@@ -182,8 +182,9 @@ module Rbrun
             manifests << service(name: deployment_name, port: svc_config.port)
           end
 
-          if svc_config.subdomain && svc_config.port
-            manifests << ingress(name: deployment_name, hostname: "#{svc_config.subdomain}.#{@zone}", port: svc_config.port)
+          subdomain = resolve(svc_config.subdomain)
+          if subdomain && svc_config.port
+            manifests << ingress(name: deployment_name, hostname: "#{subdomain}.#{@zone}", port: svc_config.port)
           end
 
           manifests
@@ -206,6 +207,7 @@ module Rbrun
         def process_manifests(name, process)
           deployment_name = "#{@prefix}-#{name}"
           replicas = resolve(process.replicas) || 1
+          subdomain = resolve(process.subdomain)
           manifests = []
 
           container = {
@@ -219,7 +221,7 @@ module Rbrun
 
           if process.port
             http_get = { path: "/", port: process.port }
-            http_get[:httpHeaders] = [{ name: "Host", value: "#{process.subdomain}.#{@zone}" }] if process.subdomain && @zone
+            http_get[:httpHeaders] = [{ name: "Host", value: "#{subdomain}.#{@zone}" }] if subdomain && @zone
             container[:readinessProbe] = {
               httpGet: http_get,
               initialDelaySeconds: 10,
@@ -233,8 +235,8 @@ module Rbrun
             manifests << service(name: deployment_name, port: process.port)
           end
 
-          if process.subdomain && process.port
-            manifests << ingress(name: deployment_name, hostname: "#{process.subdomain}.#{@zone}", port: process.port)
+          if subdomain && process.port
+            manifests << ingress(name: deployment_name, hostname: "#{subdomain}.#{@zone}", port: process.port)
           end
 
           manifests

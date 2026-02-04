@@ -247,6 +247,42 @@ module Rbrun
       assert_nothing_raised { @config.validate_for_target!(:staging) }
     end
 
+    test "#validate_for_target! raises when target missing from app.process.subdomain" do
+      @config.compute(:hetzner) do |h|
+        h.api_key = "test"
+        h.server_type = { staging: "cpx21", production: "cpx31" }
+      end
+      @config.app do |a|
+        a.process(:web) { |p| p.subdomain = { production: "www" } }
+      end
+
+      error = assert_raises(Rbrun::ConfigurationError) { @config.validate_for_target!(:staging) }
+      assert_includes error.message, "app.process(:web).subdomain missing key :staging"
+    end
+
+    test "#validate_for_target! passes when subdomain is a string" do
+      @config.compute(:hetzner) do |h|
+        h.api_key = "test"
+        h.server_type = { staging: "cpx21", production: "cpx31" }
+      end
+      @config.app do |a|
+        a.process(:web) { |p| p.subdomain = "www" }
+      end
+
+      assert_nothing_raised { @config.validate_for_target!(:staging) }
+    end
+
+    test "#validate_for_target! raises when target missing from service.subdomain" do
+      @config.compute(:hetzner) do |h|
+        h.api_key = "test"
+        h.server_type = { staging: "cpx21", production: "cpx31" }
+      end
+      @config.service(:meilisearch) { |s| s.subdomain = { production: "search" } }
+
+      error = assert_raises(Rbrun::ConfigurationError) { @config.validate_for_target!(:staging) }
+      assert_includes error.message, "service(:meilisearch).subdomain missing key :staging"
+    end
+
     # ─────────────────────────────────────────────────────────────
     # Cloudflare Tests
     # ─────────────────────────────────────────────────────────────

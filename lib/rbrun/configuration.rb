@@ -161,6 +161,18 @@ module Rbrun
         end
       end
 
+      app_config&.processes&.each do |name, process|
+        if process.subdomain.is_a?(Hash) && process.subdomain.keys.all?(Symbol) && !process.subdomain.key?(target)
+          errors << "app.process(:#{name}).subdomain missing key :#{target}"
+        end
+      end
+
+      service_configs.each do |name, svc_config|
+        if svc_config.subdomain.is_a?(Hash) && svc_config.subdomain.keys.all?(Symbol) && !svc_config.subdomain.key?(target)
+          errors << "service(:#{name}).subdomain missing key :#{target}"
+        end
+      end
+
       raise ConfigurationError, errors.join(", ") if errors.any?
     end
 

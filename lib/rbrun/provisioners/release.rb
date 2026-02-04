@@ -304,8 +304,9 @@ module Rbrun
 
           if config.app?
             config.app_config.processes.each do |name, process|
-              next unless process.subdomain && process.port
-              hostname = "#{process.subdomain}.#{zone}"
+              subdomain = config.resolve(process.subdomain, target:)
+              next unless subdomain && process.port
+              hostname = "#{subdomain}.#{zone}"
               rules << {
                 hostname:,
                 service: "http://localhost:#{HTTP_NODE_PORT}",
@@ -315,8 +316,9 @@ module Rbrun
           end
 
           config.service_configs.each do |name, svc_config|
-            next unless svc_config.subdomain && svc_config.port
-            hostname = "#{svc_config.subdomain}.#{zone}"
+            subdomain = config.resolve(svc_config.subdomain, target:)
+            next unless subdomain && svc_config.port
+            hostname = "#{subdomain}.#{zone}"
             rules << {
               hostname:,
               service: "http://localhost:#{HTTP_NODE_PORT}",
@@ -334,15 +336,17 @@ module Rbrun
 
           if config.app?
             config.app_config.processes.each do |name, process|
-              next unless process.subdomain
-              hostname = "#{process.subdomain}.#{zone}"
+              subdomain = config.resolve(process.subdomain, target:)
+              next unless subdomain
+              hostname = "#{subdomain}.#{zone}"
               cf_client.ensure_dns_record(zone_id, hostname, tunnel_id)
             end
           end
 
           config.service_configs.each do |name, svc_config|
-            next unless svc_config.subdomain
-            hostname = "#{svc_config.subdomain}.#{zone}"
+            subdomain = config.resolve(svc_config.subdomain, target:)
+            next unless subdomain
+            hostname = "#{subdomain}.#{zone}"
             cf_client.ensure_dns_record(zone_id, hostname, tunnel_id)
           end
         end
