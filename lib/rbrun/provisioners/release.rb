@@ -260,9 +260,13 @@ module Rbrun
         end
 
         def cleanup_volumes!
-          volumes = compute_client.list_volumes(label_selector: "purpose=release")
-          volumes.each do |volume|
-            log_step("delete_volume_#{volume.name}")
+          # Use prefix-based naming like all other resources
+          config.database_configs.each_key do |type|
+            volume_name = "#{prefix}-#{type}"
+            volume = compute_client.find_volume(volume_name)
+            next unless volume
+
+            log_step("delete_volume_#{type}")
             compute_client.detach_volume(volume_id: volume.id) if volume.server_id
             compute_client.delete_volume(volume.id)
           end

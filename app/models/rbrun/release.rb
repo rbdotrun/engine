@@ -106,12 +106,26 @@ module Rbrun
     # @param command [String] Command to execute
     # @param raise_on_error [Boolean] Raise exception on non-zero exit
     # @param timeout [Integer] Timeout in seconds (default: 300)
+    # @param retries [Integer] Number of retries on transient failures (default: 3)
     # @return [CommandExecution] The execution record
-    def run_ssh!(command, raise_on_error: true, timeout: 300, category: nil)
+    def run_ssh!(command, raise_on_error: true, timeout: 300, category: nil, retries: 3)
       exec = command_executions.create!(kind: "exec", command:, category:)
-      exec.execute!(timeout:, raise_on_error:) do |line|
-        puts "        #{line}"
+      attempts = 0
+
+      begin
+        attempts += 1
+        exec.execute!(timeout:, raise_on_error:) do |line|
+          puts "        #{line}"
+        end
+      rescue Ssh::Client::ConnectionError => e
+        if attempts <= retries
+          puts "        [retry #{attempts}/#{retries}] #{e.message}"
+          sleep(2 ** attempts) # Exponential backoff: 2, 4, 8 seconds
+          retry
+        end
+        raise
       end
+
       exec
     end
 

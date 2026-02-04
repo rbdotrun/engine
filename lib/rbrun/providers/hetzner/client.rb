@@ -329,7 +329,15 @@ module Rbrun
         end
 
         # Attach volume to server.
+        # Automatically detaches from current server if attached elsewhere.
         def attach_volume(volume_id:, server_id:, automount: false)
+          volume = get_volume(volume_id)
+
+          # Detach first if attached to a different server
+          if volume&.server_id.present? && volume.server_id.to_s != server_id.to_s
+            detach_volume(volume_id:)
+          end
+
           response = post("/volumes/#{volume_id.to_i}/actions/attach", {
             server: server_id.to_i,
             automount:
