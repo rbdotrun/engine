@@ -18,7 +18,7 @@ gem "rubocop-rails-omakase", require: false
 group :development, :test do
   gem "dotenv-rails"
   gem "bullet"
-  gem "minitest", "~> 5.25"
+  gem "minitest", "~> 6.0"
 end
 
 group :test do
