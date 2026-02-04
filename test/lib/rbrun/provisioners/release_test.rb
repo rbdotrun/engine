@@ -108,6 +108,42 @@ module Rbrun
           assert_equal "ssh-rsa PUBLIC test@example.com", Rbrun.configuration.compute_config.ssh_public_key
         end
       end
+
+      # ─────────────────────────────────────────────────────────────
+      # Provision/Redeploy Tests
+      # ─────────────────────────────────────────────────────────────
+
+      test "provision! skips if already deployed" do
+        @release.update!(state: "deployed")
+
+        # Should not call any provisioning methods
+        @provisioner.stub(:create_infrastructure!, -> { raise "should not be called" }) do
+          @provisioner.provision! # Should return early, not raise
+        end
+      end
+
+      test "redeploy! raises if not deployed" do
+        @release.update!(state: "pending")
+
+        assert_raises(RuntimeError, "Release not deployed") do
+          @provisioner.redeploy!
+        end
+      end
+
+      test "redeploy! calls deploy_kubernetes!" do
+        @release.update!(state: "deployed")
+
+        deploy_called = false
+        @provisioner.stub(:build_and_push_image!, -> {}) do
+          @provisioner.stub(:deploy_kubernetes!, -> { deploy_called = true }) do
+            @provisioner.stub(:wait_for_rollout!, -> {}) do
+              @provisioner.redeploy!
+            end
+          end
+        end
+
+        assert deploy_called, "deploy_kubernetes! should be called on redeploy"
+      end
     end
   end
 end

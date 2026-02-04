@@ -36,6 +36,7 @@ module Rbrun
         raise "Release not deployed" unless release.deployed?
 
         build_and_push_image! if config.app?
+        deploy_kubernetes!
         wait_for_rollout!
       end
 
