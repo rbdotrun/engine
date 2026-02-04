@@ -82,9 +82,6 @@ module Rbrun
         # ─────────────────────────────────────────────────────────────
 
         def create_infrastructure!
-          # Load SSH keys (from config or generate once)
-          load_ssh_keys! unless release.ssh_keys_present?
-          release.save! if release.changed?
 
           log_step("firewall")
           firewall = create_firewall!
@@ -101,16 +98,6 @@ module Rbrun
           wait_for_ssh!
         end
 
-        def load_ssh_keys!
-          # Use configured local SSH keys, or generate if not configured
-          if config.compute_config.respond_to?(:read_ssh_keys) && config.compute_config.ssh_keys_configured?
-            keys = config.compute_config.read_ssh_keys
-            release.ssh_public_key = keys[:public_key]
-            release.ssh_private_key = keys[:private_key]
-          else
-            release.generate_ssh_keypair
-          end
-        end
 
         def create_firewall!
           # SSH from anywhere, K3s API from private network only
@@ -122,7 +109,7 @@ module Rbrun
         end
 
         def create_server!(firewall_id:, network_id:)
-          user_data = Providers::CloudInit.generate(ssh_public_key: release.ssh_public_key)
+          user_data = Providers::CloudInit.generate(ssh_public_key: config.compute_config.ssh_public_key)
           server_type = config.resolve(config.compute_config.server_type, target:)
 
           compute_client.find_or_create_server(

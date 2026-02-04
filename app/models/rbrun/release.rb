@@ -95,10 +95,10 @@ module Rbrun
       save!
     end
 
-    # SSH client for remote command execution.
+    # SSH client for remote command execution (uses config's SSH key).
     def ssh_client
       return nil unless server_ip.present?
-      Ssh::Client.new(host: server_ip, private_key: ssh_private_key, user: Naming.default_user)
+      Ssh::Client.new(host: server_ip, private_key: Rbrun.configuration.compute_config.ssh_private_key, user: Naming.default_user)
     end
 
     # Execute SSH command through command_execution model.

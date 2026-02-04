@@ -454,7 +454,7 @@ module Rbrun
     end
 
     test "#validate! raises if git.pat blank" do
-      @config.compute(:hetzner) { |c| c.api_key = "key" }
+      @config.compute(:hetzner) { |c| c.api_key = "key"; c.ssh_key_path = TEST_SSH_KEY_PATH }
       @config.git_config.repo = "repo"
 
       error = assert_raises(ConfigurationError) { @config.validate! }
@@ -462,7 +462,7 @@ module Rbrun
     end
 
     test "#validate! raises if git.repo blank" do
-      @config.compute(:hetzner) { |c| c.api_key = "key" }
+      @config.compute(:hetzner) { |c| c.api_key = "key"; c.ssh_key_path = TEST_SSH_KEY_PATH }
       @config.git_config.pat = "token"
 
       error = assert_raises(ConfigurationError) { @config.validate! }
@@ -470,7 +470,7 @@ module Rbrun
     end
 
     test "#validate! passes with minimal valid config" do
-      @config.compute(:hetzner) { |c| c.api_key = "key" }
+      @config.compute(:hetzner) { |c| c.api_key = "key"; c.ssh_key_path = TEST_SSH_KEY_PATH }
       @config.git_config.pat = "token"
       @config.git_config.repo = "repo"
 

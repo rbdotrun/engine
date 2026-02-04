@@ -76,44 +76,37 @@ module Rbrun
       end
 
       # ─────────────────────────────────────────────────────────────
-      # SSH Key Tests
+      # SSH Key Tests (releases use static config keys)
       # ─────────────────────────────────────────────────────────────
 
-      test "load_ssh_keys! generates keys when no ssh_key_path configured" do
-        @provisioner.send(:load_ssh_keys!)
-
-        assert @release.ssh_public_key.present?
-        assert @release.ssh_private_key.present?
-        assert @release.ssh_public_key.start_with?("ssh-rsa")
-      end
-
-      test "load_ssh_keys! uses configured ssh_key_path" do
+      test "ssh_client uses config ssh_private_key" do
         Dir.mktmpdir do |dir|
           private_key_path = File.join(dir, "test_key")
           public_key_path = "#{private_key_path}.pub"
 
-          File.write(private_key_path, "PRIVATE_KEY_CONTENT")
-          File.write(public_key_path, "ssh-rsa AAAA... test@example.com")
+          File.write(private_key_path, "CONFIG_PRIVATE_KEY")
+          File.write(public_key_path, "ssh-rsa CONFIG_PUBLIC test@example.com")
 
           Rbrun.configuration.compute_config.ssh_key_path = private_key_path
+          @release.update!(server_ip: "1.2.3.4")
 
-          @provisioner.send(:load_ssh_keys!)
-
-          assert_equal "PRIVATE_KEY_CONTENT", @release.ssh_private_key
-          assert_equal "ssh-rsa AAAA... test@example.com", @release.ssh_public_key
+          client = @release.ssh_client
+          assert_equal "CONFIG_PRIVATE_KEY", client.instance_variable_get(:@private_key)
         end
       end
 
-      test "ssh keys not reloaded if already present on release" do
-        @release.ssh_public_key = "existing_pub"
-        @release.ssh_private_key = "existing_priv"
+      test "config ssh_public_key reads from file" do
+        Dir.mktmpdir do |dir|
+          private_key_path = File.join(dir, "test_key")
+          public_key_path = "#{private_key_path}.pub"
 
-        # load_ssh_keys! should not be called when keys present
-        assert @release.ssh_keys_present?
+          File.write(private_key_path, "PRIVATE")
+          File.write(public_key_path, "ssh-rsa PUBLIC test@example.com")
 
-        # Keys remain unchanged
-        assert_equal "existing_pub", @release.ssh_public_key
-        assert_equal "existing_priv", @release.ssh_private_key
+          Rbrun.configuration.compute_config.ssh_key_path = private_key_path
+
+          assert_equal "ssh-rsa PUBLIC test@example.com", Rbrun.configuration.compute_config.ssh_public_key
+        end
       end
     end
   end

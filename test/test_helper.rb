@@ -12,6 +12,13 @@ require "sshkey"
 # Pre-generate SSH keypair once at test suite load (avoids 200-500ms per Sandbox.create)
 TEST_SSH_KEY = SSHKey.generate(type: "RSA", bits: 4096, comment: "rbrun-test")
 
+# Create test SSH key files for compute config
+TEST_SSH_KEY_DIR = Dir.mktmpdir("rbrun-test-keys")
+TEST_SSH_KEY_PATH = File.join(TEST_SSH_KEY_DIR, "id_rsa")
+File.write(TEST_SSH_KEY_PATH, TEST_SSH_KEY.private_key)
+File.write("#{TEST_SSH_KEY_PATH}.pub", TEST_SSH_KEY.ssh_public_key)
+at_exit { FileUtils.rm_rf(TEST_SSH_KEY_DIR) }
+
 # Stub configuration for all tests
 module RbrunTestSetup
   def setup
@@ -20,6 +27,7 @@ module RbrunTestSetup
     Rbrun.configure do |c|
       c.compute(:hetzner) do |com|
         com.api_key = "test-hetzner-key"
+        com.ssh_key_path = TEST_SSH_KEY_PATH
       end
 
       c.cloudflare do |cf|

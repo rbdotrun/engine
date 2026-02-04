@@ -46,11 +46,9 @@ module Rbrun
         release = find_release_with_infra!
         abort "No server IP" unless release.server_ip
 
-        # Write key to temp file and SSH with it
-        key_file = "/tmp/rbrun_#{release.environment}_key"
-        File.write(key_file, release.ssh_private_key)
-        File.chmod(0600, key_file)
-        exec "ssh -i #{key_file} -o StrictHostKeyChecking=no deploy@#{release.server_ip}"
+        # Use configured SSH key
+        key_path = File.expand_path(Rbrun.configuration.compute_config.ssh_key_path)
+        exec "ssh -i #{key_path} -o StrictHostKeyChecking=no deploy@#{release.server_ip}"
       end
 
       desc "logs", "Show pod logs"
