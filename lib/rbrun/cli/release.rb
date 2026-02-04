@@ -15,7 +15,11 @@ module Rbrun
         env = options[:env].to_sym
         Rbrun.configuration.validate_for_target!(env)
 
-        release = Rbrun::Release.create!(environment: options[:env], branch: options[:branch])
+        # Reuse existing release for environment if it has infrastructure, otherwise create new
+        release = Rbrun::Release.where(environment: options[:env]).where.not(server_ip: nil).last
+        release ||= Rbrun::Release.create!(environment: options[:env], branch: options[:branch])
+        release.update!(branch: options[:branch]) if release.branch != options[:branch]
+
         puts "Release: #{release.id} (#{release.environment}/#{release.branch})"
         release.provision!
         puts "URL: #{release.url}"
