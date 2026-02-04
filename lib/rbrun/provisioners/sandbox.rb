@@ -64,7 +64,7 @@ module Rbrun
           firewall = compute_client.find_or_create_firewall(Naming.resource(sandbox.slug))
 
           log_step("network")
-          network = compute_client.find_or_create_network(Naming.resource(sandbox.slug))
+          network = compute_client.find_or_create_network(Naming.resource(sandbox.slug), location: Rbrun.configuration.compute_config.location)
 
           log_step("server")
           create_server!(firewall_id: firewall.id, network_id: network.id)

@@ -9,6 +9,15 @@ module Rbrun
       class Client < Rbrun::BaseClient
         BASE_URL = "https://api.hetzner.cloud/v1"
 
+        # Location to network zone mapping
+        NETWORK_ZONES = {
+          "fsn1" => "eu-central",
+          "nbg1" => "eu-central",
+          "hel1" => "eu-central",
+          "ash" => "us-east",
+          "hil" => "us-west"
+        }.freeze
+
         def initialize(api_key:)
           @api_key = api_key
           raise Error, "Hetzner API key not configured" if @api_key.blank?
@@ -161,9 +170,11 @@ module Rbrun
         end
 
         # Find or create a private network.
-        def find_or_create_network(name, ip_range: "10.0.0.0/16", subnet_range: "10.0.0.0/24", network_zone: "us-east")
+        def find_or_create_network(name, location:, ip_range: "10.0.0.0/16", subnet_range: "10.0.0.0/24")
           existing = find_network(name)
           return existing if existing
+
+          network_zone = NETWORK_ZONES[location] || "eu-central"
 
           response = post("/networks", {
             name:,
