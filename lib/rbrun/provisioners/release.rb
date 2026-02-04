@@ -376,12 +376,16 @@ module Rbrun
             prefix:,
             zone:,
             target:,
-            db_password: existing_db_password || SecureRandom.hex(16),
+            db_password: configured_db_password || existing_db_password || SecureRandom.hex(16),
             registry_tag: @build_result&.dig(:registry_tag),
             tunnel_token: @tunnel_token
           )
 
           kubectl_client.apply(generator.generate)
+        end
+
+        def configured_db_password
+          config.database_configs[:postgres]&.password.presence
         end
 
         def existing_db_password

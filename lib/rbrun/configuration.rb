@@ -190,7 +190,7 @@ module Rbrun
   # ─────────────────────────────────────────────────────────────
 
   class DatabaseConfig
-    attr_accessor :volume_size, :image
+    attr_accessor :volume_size, :image, :password, :username, :database
     attr_reader :type, :backup_config
 
     DEFAULT_IMAGES = {
@@ -203,6 +203,9 @@ module Rbrun
       @type = type.to_sym
       @volume_size = "10Gi"
       @image = nil
+      @password = nil
+      @username = "app"
+      @database = "app"
     end
 
     def backup(&block)

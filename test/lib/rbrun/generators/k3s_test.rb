@@ -111,6 +111,38 @@ module Rbrun
         assert_includes manifests, "POSTGRES_PORT"
       end
 
+      test "uses custom postgres username in DATABASE_URL" do
+        @config.database(:postgres) { |db| db.username = "myuser" }
+
+        generator = K3s.new(@config, target: :production, prefix: "app", zone: "example.com", db_password: "pw")
+        manifests = generator.generate
+
+        assert_includes manifests, Base64.strict_encode64("postgresql://myuser:pw@app-postgres:5432/app")
+        assert_includes manifests, Base64.strict_encode64("myuser")
+      end
+
+      test "uses custom postgres database in DATABASE_URL" do
+        @config.database(:postgres) { |db| db.database = "mydb" }
+
+        generator = K3s.new(@config, target: :production, prefix: "app", zone: "example.com", db_password: "pw")
+        manifests = generator.generate
+
+        assert_includes manifests, Base64.strict_encode64("postgresql://app:pw@app-postgres:5432/mydb")
+        assert_includes manifests, Base64.strict_encode64("mydb")
+      end
+
+      test "uses custom postgres username and database together" do
+        @config.database(:postgres) do |db|
+          db.username = "insiti"
+          db.database = "insiti_production"
+        end
+
+        generator = K3s.new(@config, target: :production, prefix: "app", zone: "example.com", db_password: "secret")
+        manifests = generator.generate
+
+        assert_includes manifests, Base64.strict_encode64("postgresql://insiti:secret@app-postgres:5432/insiti_production")
+      end
+
       # ─────────────────────────────────────────────────────────────
       # App Process Tests
       # ─────────────────────────────────────────────────────────────

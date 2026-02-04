@@ -86,6 +86,36 @@ module Rbrun
       assert_equal "postgres:16-alpine", @config.database_configs[:postgres].image
     end
 
+    test "#database allows setting password" do
+      @config.database(:postgres) { |db| db.password = "secret123" }
+
+      assert_equal "secret123", @config.database_configs[:postgres].password
+    end
+
+    test "#database allows setting username" do
+      @config.database(:postgres) { |db| db.username = "myuser" }
+
+      assert_equal "myuser", @config.database_configs[:postgres].username
+    end
+
+    test "#database allows setting database name" do
+      @config.database(:postgres) { |db| db.database = "mydb" }
+
+      assert_equal "mydb", @config.database_configs[:postgres].database
+    end
+
+    test "#database defaults username to app" do
+      @config.database(:postgres)
+
+      assert_equal "app", @config.database_configs[:postgres].username
+    end
+
+    test "#database defaults database to app" do
+      @config.database(:postgres)
+
+      assert_equal "app", @config.database_configs[:postgres].database
+    end
+
     test "#database? returns false when no databases configured" do
       refute @config.database?
     end

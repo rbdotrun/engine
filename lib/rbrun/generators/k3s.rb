@@ -50,11 +50,14 @@ module Rbrun
           end
 
           if @config.database?(:postgres)
-            env_data["DATABASE_URL"] = "postgresql://app:#{@db_password}@#{@prefix}-postgres:5432/app"
+            pg = @config.database_configs[:postgres]
+            pg_user = pg.username || "app"
+            pg_db = pg.database || "app"
+            env_data["DATABASE_URL"] = "postgresql://#{pg_user}:#{@db_password}@#{@prefix}-postgres:5432/#{pg_db}"
             env_data["POSTGRES_HOST"] = "#{@prefix}-postgres"
-            env_data["POSTGRES_USER"] = "app"
+            env_data["POSTGRES_USER"] = pg_user
             env_data["POSTGRES_PASSWORD"] = @db_password
-            env_data["POSTGRES_DB"] = "app"
+            env_data["POSTGRES_DB"] = pg_db
             env_data["POSTGRES_PORT"] = "5432"
           end
 
@@ -92,6 +95,8 @@ module Rbrun
         def postgres_manifests(db_config)
           name = "#{@prefix}-postgres"
           secret_name = "#{name}-secret"
+          pg_user = db_config.username || "app"
+          pg_db = db_config.database || "app"
 
           [
             secret(name: secret_name, data: { "DB_PASSWORD" => @db_password }),
@@ -103,13 +108,13 @@ module Rbrun
                 image: db_config.image,
                 ports: [{ containerPort: 5432 }],
                 env: [
-                  { name: "POSTGRES_USER", value: "app" },
-                  { name: "POSTGRES_DB", value: "app" },
+                  { name: "POSTGRES_USER", value: pg_user },
+                  { name: "POSTGRES_DB", value: pg_db },
                   { name: "POSTGRES_PASSWORD", valueFrom: { secretKeyRef: { name: secret_name, key: "DB_PASSWORD" } } },
                   { name: "PGDATA", value: "/var/lib/postgresql/data/pgdata" }
                 ],
                 volumeMounts: [{ name: "data", mountPath: "/var/lib/postgresql/data" }],
-                readinessProbe: { exec: { command: ["pg_isready", "-U", "app"] }, initialDelaySeconds: 5, periodSeconds: 5 }
+                readinessProbe: { exec: { command: ["pg_isready", "-U", pg_user] }, initialDelaySeconds: 5, periodSeconds: 5 }
               }],
               volumes: [host_path_volume("data", "/mnt/data/#{name}")]
             ),

@@ -54,6 +54,26 @@ module Rbrun
         assert_includes command, "git checkout staging"
         assert_includes command, "git pull origin staging"
       end
+
+      # ─────────────────────────────────────────────────────────────
+      # Database Password Tests
+      # ─────────────────────────────────────────────────────────────
+
+      test "configured_db_password returns nil when not set" do
+        Rbrun.configuration.database(:postgres)
+
+        assert_nil @provisioner.send(:configured_db_password)
+      end
+
+      test "configured_db_password returns password when set" do
+        Rbrun.configuration.database(:postgres) { |db| db.password = "my_secret_pw" }
+
+        assert_equal "my_secret_pw", @provisioner.send(:configured_db_password)
+      end
+
+      test "configured_db_password returns nil when no postgres configured" do
+        assert_nil @provisioner.send(:configured_db_password)
+      end
     end
   end
 end
