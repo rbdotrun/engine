@@ -82,13 +82,8 @@ module Rbrun
         # ─────────────────────────────────────────────────────────────
 
         def create_infrastructure!
-          # Use configured SSH keys, or reuse from last release, or generate new
-          existing_server = compute_client.find_server(prefix)
-          if existing_server
-            reuse_ssh_keys_from_last_release!
-          else
-            load_ssh_keys!
-          end
+          # Load SSH keys (from config or generate once)
+          load_ssh_keys! unless release.ssh_keys_present?
           release.save! if release.changed?
 
           log_step("firewall")
@@ -107,27 +102,14 @@ module Rbrun
         end
 
         def load_ssh_keys!
-          # 1. Use configured local SSH keys if available
+          # Use configured local SSH keys, or generate if not configured
           if config.compute_config.respond_to?(:read_ssh_keys) && config.compute_config.ssh_keys_configured?
             keys = config.compute_config.read_ssh_keys
             release.ssh_public_key = keys[:public_key]
             release.ssh_private_key = keys[:private_key]
-            return
+          else
+            release.generate_ssh_keypair
           end
-
-          # 2. Fall back to generating new keys
-          release.generate_ssh_keypair unless release.ssh_keys_present?
-        end
-
-        def reuse_ssh_keys_from_last_release!
-          last_release = Rbrun::Release.where.not(id: release.id)
-                                        .where.not(ssh_private_key: nil)
-                                        .order(id: :desc)
-                                        .first
-          return load_ssh_keys! unless last_release
-
-          release.ssh_public_key = last_release.ssh_public_key
-          release.ssh_private_key = last_release.ssh_private_key
         end
 
         def create_firewall!
