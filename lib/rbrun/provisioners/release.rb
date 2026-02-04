@@ -27,7 +27,6 @@ module Rbrun
       end
 
       def deprovision!
-        cleanup_kubernetes! if server_exists?
         cleanup_tunnel! if cloudflare_configured?
         cleanup_volumes!
         delete_infrastructure!
@@ -392,33 +391,6 @@ module Rbrun
               kubectl_client.rollout_status("#{prefix}-#{name}", timeout: 300)
             end
           end
-        end
-
-        def cleanup_kubernetes!
-          log_step("cleanup_k8s")
-
-          kubectl_client.delete_resource("deployment", "#{prefix}-cloudflared")
-
-          if config.app?
-            config.app_config.processes.each_key do |name|
-              kubectl_client.delete_resource("deployment", "#{prefix}-#{name}")
-              kubectl_client.delete_resource("service", "#{prefix}-#{name}")
-              kubectl_client.delete_resource("ingress", "#{prefix}-#{name}")
-            end
-          end
-
-          config.service_configs.each_key do |name|
-            kubectl_client.delete_resource("deployment", "#{prefix}-#{name}")
-            kubectl_client.delete_resource("service", "#{prefix}-#{name}")
-            kubectl_client.delete_resource("ingress", "#{prefix}-#{name}")
-          end
-
-          config.database_configs.each_key do |type|
-            kubectl_client.delete_resource("deployment", "#{prefix}-#{type}")
-            kubectl_client.delete_resource("service", "#{prefix}-#{type}")
-          end
-
-          kubectl_client.delete_resource("secret", "#{prefix}-app-secret")
         end
 
         def kubectl_client
