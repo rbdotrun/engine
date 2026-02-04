@@ -15,14 +15,11 @@ module Rbrun
       end
 
       def provision!
-        unless release.deployed?
-          create_infrastructure!
-          install_k3s!
-          provision_volumes! if needs_volumes?
-          setup_tunnel! if cloudflare_configured?
-        end
-
-        # Always build and apply manifests (idempotent)
+        # All methods are idempotent - they check internally and skip if satisfied
+        create_infrastructure!
+        install_k3s!
+        provision_volumes! if needs_volumes?
+        setup_tunnel! if cloudflare_configured?
         build_and_push_image! if config.app?
         deploy_kubernetes!
         wait_for_rollout!

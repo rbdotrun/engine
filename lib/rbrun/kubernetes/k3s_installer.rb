@@ -73,6 +73,13 @@ module Rbrun
         end
 
         def install_docker!
+          # Idempotent: skip if docker already installed and running
+          check = run_ssh!("docker --version && systemctl is-active docker", raise_on_error: false)
+          if check.success?
+            puts "      [k3s:install_docker] already installed, skipping"
+            return
+          end
+
           log_step("install_docker")
           run_ssh!(<<~BASH)
             export DEBIAN_FRONTEND=noninteractive
@@ -113,6 +120,13 @@ module Rbrun
         end
 
         def install_k3s!(public_ip, private_ip, interface)
+          # Idempotent: skip if k3s already installed and running
+          check = run_ssh!("kubectl get nodes 2>/dev/null | grep -q Ready", raise_on_error: false)
+          if check.success?
+            puts "      [k3s:install_k3s] already installed, skipping"
+            return
+          end
+
           log_step("install_k3s")
 
           k3s_args = [
