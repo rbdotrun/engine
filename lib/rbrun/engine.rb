@@ -16,9 +16,11 @@ module Rbrun
     config.autoload_paths << root.join("app/services")
 
     initializer "rbrun.assets" do |app|
-      app.config.assets.paths << Engine.root.join("app/javascript")
-      app.config.assets.paths << Engine.root.join("app/assets/stylesheets")
-      app.config.assets.precompile += %w[rbrun/tailwind.css] if app.config.respond_to?(:assets)
+      if app.config.respond_to?(:assets) && app.config.assets
+        app.config.assets.paths << Engine.root.join("app/javascript")
+        app.config.assets.paths << Engine.root.join("app/assets/stylesheets")
+        app.config.assets.precompile += %w[rbrun/tailwind.css]
+      end
     end
 
     initializer "rbrun.append_migrations" do |app|
