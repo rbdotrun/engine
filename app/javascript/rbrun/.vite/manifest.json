@@ -1,0 +1,8 @@
+{
+  "src/index.tsx": {
+    "file": "console.js",
+    "name": "index",
+    "src": "src/index.tsx",
+    "isEntry": true
+  }
+}

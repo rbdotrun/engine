@@ -1,0 +1,3 @@
+web: RBRUN_DEV=1 bin/rails s -p3000
+console: cd console && npm run dev
+tunnel: cloudflared tunnel run --token $TUNNEL_TOKEN

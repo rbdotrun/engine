@@ -1,0 +1,31 @@
+@import "tailwindcss";
+
+@source "../../../views/**/*.{erb,html}";
+@source "../../../javascript/**/*.js";
+
+@layer base {
+  html, body {
+    @apply h-dvh m-0 overflow-hidden;
+  }
+  body {
+    @apply font-sans flex flex-col;
+  }
+}
+
+button,
+a,
+input[type="submit"],
+select,
+option,
+[role="button"],
+[role="menuitem"] {
+  cursor: pointer !important;
+}
+
+button {
+  text-align: left;
+}
+
+*::-webkit-scrollbar {
+  display: none;
+}

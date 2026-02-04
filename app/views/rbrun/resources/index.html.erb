@@ -1,0 +1,87 @@
+<div class="p-6 max-w-4xl mx-auto">
+  <div class="flex items-center justify-between mb-6">
+    <h1 class="text-2xl font-bold">Resources</h1>
+    <%= link_to "← Sandboxes", sandboxes_path, class: "text-blue-600 hover:underline" %>
+  </div>
+
+  <%# Hetzner %>
+  <div class="mb-8">
+    <h2 class="text-lg font-semibold mb-3 text-gray-700">Hetzner</h2>
+    <table class="w-full border-collapse border border-gray-300">
+      <thead>
+        <tr class="bg-gray-100">
+          <th class="border border-gray-300 px-4 py-2 text-left">Resource</th>
+          <th class="border border-gray-300 px-4 py-2 text-left w-20">Count</th>
+          <th class="border border-gray-300 px-4 py-2 text-left">Sandboxes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="border border-gray-300 px-4 py-2">Servers</td>
+          <td class="border border-gray-300 px-4 py-2"><%= @resources[:hetzner][:servers].count %></td>
+          <td class="border border-gray-300 px-4 py-2 font-mono text-sm">
+            <%= @resources[:hetzner][:servers].map { |s| s[:name] }.join(", ") %>
+          </td>
+        </tr>
+        <tr>
+          <td class="border border-gray-300 px-4 py-2">Networks</td>
+          <td class="border border-gray-300 px-4 py-2"><%= @resources[:hetzner][:networks].count %></td>
+          <td class="border border-gray-300 px-4 py-2 font-mono text-sm">
+            <%= @resources[:hetzner][:networks].map { |n| n[:name] }.join(", ") %>
+          </td>
+        </tr>
+        <tr>
+          <td class="border border-gray-300 px-4 py-2">Firewalls</td>
+          <td class="border border-gray-300 px-4 py-2"><%= @resources[:hetzner][:firewalls].count %></td>
+          <td class="border border-gray-300 px-4 py-2 font-mono text-sm">
+            <%= @resources[:hetzner][:firewalls].map { |f| f[:name] }.join(", ") %>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <%# Cloudflare %>
+  <div class="mb-8">
+    <h2 class="text-lg font-semibold mb-3 text-gray-700">Cloudflare</h2>
+    <table class="w-full border-collapse border border-gray-300">
+      <thead>
+        <tr class="bg-gray-100">
+          <th class="border border-gray-300 px-4 py-2 text-left">Resource</th>
+          <th class="border border-gray-300 px-4 py-2 text-left w-20">Count</th>
+          <th class="border border-gray-300 px-4 py-2 text-left">Sandboxes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="border border-gray-300 px-4 py-2">Tunnels</td>
+          <td class="border border-gray-300 px-4 py-2"><%= @resources[:cloudflare][:tunnels].count %></td>
+          <td class="border border-gray-300 px-4 py-2 font-mono text-sm">
+            <%= @resources[:cloudflare][:tunnels].map { |t| t[:name] }.join(", ") %>
+          </td>
+        </tr>
+        <tr>
+          <td class="border border-gray-300 px-4 py-2">DNS Records</td>
+          <td class="border border-gray-300 px-4 py-2"><%= @resources[:cloudflare][:dns_records].count %></td>
+          <td class="border border-gray-300 px-4 py-2 font-mono text-sm">
+            <%= @resources[:cloudflare][:dns_records].map { |r| r[:name].split(".").first }.join(", ") %>
+          </td>
+        </tr>
+        <tr>
+          <td class="border border-gray-300 px-4 py-2">Workers</td>
+          <td class="border border-gray-300 px-4 py-2"><%= @resources[:cloudflare][:workers].count %></td>
+          <td class="border border-gray-300 px-4 py-2 font-mono text-sm">
+            <%= @resources[:cloudflare][:workers].map { |w| w[:id] }.join(", ") %>
+          </td>
+        </tr>
+        <tr>
+          <td class="border border-gray-300 px-4 py-2">Routes</td>
+          <td class="border border-gray-300 px-4 py-2"><%= @resources[:cloudflare][:worker_routes].count %></td>
+          <td class="border border-gray-300 px-4 py-2 font-mono text-sm">
+            <%= @resources[:cloudflare][:worker_routes].map { |r| r[:pattern].split(".").first }.join(", ") %>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

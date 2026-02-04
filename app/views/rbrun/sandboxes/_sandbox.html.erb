@@ -1,0 +1,18 @@
+<%= link_to sandbox_path(sandbox), class: "block p-4 border rounded hover:bg-gray-50" do %>
+  <div class="flex justify-between items-center">
+    <div>
+      <span class="font-mono text-sm"><%= sandbox.slug %></span>
+    </div>
+    <div class="flex items-center gap-2">
+      <span class="px-2 py-1 text-xs rounded <%= sandbox_state_class(sandbox) %>">
+        <%= sandbox.state %>
+      </span>
+      <% if sandbox.exposed? %>
+        <span class="px-2 py-1 text-xs bg-green-100 text-green-800 rounded">public</span>
+      <% end %>
+    </div>
+  </div>
+  <div class="text-sm text-gray-500 mt-1">
+    Created <%= time_ago_in_words(sandbox.created_at) %> ago
+  </div>
+<% end %>

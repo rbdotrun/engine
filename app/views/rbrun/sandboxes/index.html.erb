@@ -1,0 +1,24 @@
+<div class="p-4">
+  <div class="flex justify-between items-center mb-4">
+    <h1 class="text-2xl font-bold">Sandboxes</h1>
+    <%= button_to "Launch Sandbox", sandboxes_path, method: :post, class: "px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700" %>
+  </div>
+
+  <div class="mb-4 p-3 bg-gray-100 rounded text-sm">
+    <span class="text-gray-600">Repository:</span>
+    <span class="font-mono font-medium"><%= @config.git_config.repo %></span>
+    <% if @config.cloudflare_configured? %>
+      <span class="ml-4 px-2 py-0.5 bg-green-100 text-green-700 rounded text-xs">Cloudflare enabled</span>
+    <% end %>
+  </div>
+
+  <% if @sandboxes.any? %>
+    <div class="space-y-2">
+      <% @sandboxes.each do |sandbox| %>
+        <%= render "sandbox", sandbox: sandbox %>
+      <% end %>
+    </div>
+  <% else %>
+    <p class="text-gray-500">No sandboxes yet. Launch one to get started.</p>
+  <% end %>
+</div>

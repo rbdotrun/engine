@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Rbrun</title>
+  <%= csrf_meta_tags %>
+  <%= csp_meta_tag %>
+
+  <%= yield :head %>
+
+  <%# Engine's own Stimulus/importmap %>
+  <%= rbrun_importmap_tags %>
+
+  <%# Tailwind CSS %>
+  <%= stylesheet_link_tag "rbrun/tailwind", media: "all" %>
+</head>
+<body>
+
+<%= yield %>
+
+</body>
+</html>

@@ -1,0 +1,24 @@
+# Omakase Ruby styling for Rails
+inherit_gem: { rubocop-rails-omakase: rubocop.yml }
+
+AllCops:
+  TargetRubyVersion: 3.4
+  Exclude:
+    - 'lib/pdf/**/*'
+
+# Overwrite or add rules to create your own house style
+#
+# # Use `[a, [b, c]]` not `[ a, [ b, c ] ]`
+Layout/SpaceInsideArrayLiteralBrackets:
+  Enabled: false
+
+# Enforce Ruby 3.1+ hash shorthand syntax
+Style/HashSyntax:
+  EnforcedStyle: ruby19_no_mixed_keys
+  EnforcedShorthandSyntax: always
+
+Layout/IndentationConsistency:
+  Enabled: true
+
+Layout/IndentationWidth:
+  Enabled: true
