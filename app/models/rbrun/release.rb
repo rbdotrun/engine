@@ -59,7 +59,7 @@ module Rbrun
       return nil unless config.app? && config.app_config.web?
 
       web_process = config.app_config.processes[:web]
-      subdomain = web_process&.subdomain
+      subdomain = config.resolve(web_process&.subdomain, target: environment.to_sym)
       return nil unless subdomain
 
       "https://#{subdomain}.#{zone}"
