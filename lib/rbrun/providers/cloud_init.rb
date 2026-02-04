@@ -26,6 +26,10 @@ module Rbrun
                 - #{@ssh_public_key}
           disable_root: true
           ssh_pwauth: false
+          swap:
+            filename: /swapfile
+            size: 4G
+            maxsize: 4G
         CLOUD_INIT
       end
     end
