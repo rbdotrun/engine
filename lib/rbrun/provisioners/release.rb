@@ -4,7 +4,6 @@ module Rbrun
   module Provisioners
     # K3s-based production deployment provisioner.
     class Release
-      WORKSPACE = "/home/deploy/workspace"
       VOLUME_MOUNT_BASE = "/mnt/data"
       HTTP_NODE_PORT = 30080
 
@@ -41,17 +40,6 @@ module Rbrun
 
       def server_exists?
         compute_client.find_server(prefix).present?
-      end
-
-      def repo_sync_command(workspace_exists:)
-        clone_url = "https://#{config.git_config.pat}@github.com/#{config.git_config.repo}.git"
-        branch = release.branch
-
-        if workspace_exists
-          ["pull", "cd #{WORKSPACE} && git fetch origin && git checkout #{branch} && git pull origin #{branch}"]
-        else
-          ["clone", "git clone --branch #{branch} #{Shellwords.escape(clone_url)} #{WORKSPACE}"]
-        end
       end
 
       private
@@ -277,27 +265,32 @@ module Rbrun
         # ─────────────────────────────────────────────────────────────
 
         def build_and_push_image!
-          clone_repo!
+          Dir.mktmpdir("rbrun-build-") do |tmpdir|
+            log_step("git_clone")
+            clone_to_tmpdir!(tmpdir)
 
-          log_step("docker_build")
-          @build_result = docker_builder.build_and_push!(
-            context_path: WORKSPACE,
-            dockerfile: config.app_config.dockerfile,
-            platform: config.app_config.platform
-          )
+            log_step("docker_build")
+            # Build via DOCKER_HOST=ssh:// - Docker transfers context to remote daemon
+            @build_result = docker_builder.build_and_push!(
+              context_path: tmpdir,
+              dockerfile: config.app_config.dockerfile,
+              platform: config.app_config.platform
+            )
+          end
 
           release.update!(registry_tag: @build_result[:registry_tag])
         end
 
-        def docker_builder
-          @docker_builder ||= Kubernetes::DockerBuilder.new(release:, prefix:)
+        def clone_to_tmpdir!(tmpdir)
+          clone_url = "https://#{config.git_config.pat}@github.com/#{config.git_config.repo}.git"
+          branch = release.branch
+
+          success = system("git", "clone", "--depth=1", "--branch", branch, clone_url, tmpdir, out: File::NULL, err: File::NULL)
+          raise "git clone failed for branch #{branch}" unless success
         end
 
-        def clone_repo!
-          workspace_exists = run_ssh!("test -d #{WORKSPACE}/.git", raise_on_error: false)[:exit_code] == 0
-          action, command = repo_sync_command(workspace_exists:)
-          log_step(action)
-          run_ssh!(command, timeout: 120)
+        def docker_builder
+          @docker_builder ||= Kubernetes::DockerBuilder.new(release:, prefix:)
         end
 
         # ─────────────────────────────────────────────────────────────
