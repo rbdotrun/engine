@@ -72,6 +72,20 @@ module Rbrun
       assert_equal "50Gi", @config.database_configs[:postgres].volume_size
     end
 
+    test "#database allows overriding image" do
+      @config.database(:postgres) do |db|
+        db.image = "pgvector/pgvector:pg17"
+      end
+
+      assert_equal "pgvector/pgvector:pg17", @config.database_configs[:postgres].image
+    end
+
+    test "#database uses default image when not overridden" do
+      @config.database(:postgres)
+
+      assert_equal "postgres:16-alpine", @config.database_configs[:postgres].image
+    end
+
     test "#database? returns false when no databases configured" do
       refute @config.database?
     end

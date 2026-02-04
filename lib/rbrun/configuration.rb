@@ -178,7 +178,7 @@ module Rbrun
   # ─────────────────────────────────────────────────────────────
 
   class DatabaseConfig
-    attr_accessor :volume_size
+    attr_accessor :volume_size, :image
     attr_reader :type, :backup_config
 
     DEFAULT_IMAGES = {
@@ -190,6 +190,7 @@ module Rbrun
     def initialize(type)
       @type = type.to_sym
       @volume_size = "10Gi"
+      @image = nil
     end
 
     def backup(&block)
@@ -199,7 +200,7 @@ module Rbrun
     end
 
     def image
-      DEFAULT_IMAGES[@type]
+      @image || DEFAULT_IMAGES[@type]
     end
   end
 
