@@ -26,6 +26,7 @@ module Rbrun
         configure_k3s_registries!
         install_k3s!(network[:public_ip], network[:private_ip], network[:interface])
         setup_kubeconfig!(network[:private_ip])
+        deploy_priority_classes!
         deploy_registry!
         wait_for_registry!
         deploy_ingress_controller!
@@ -151,6 +152,11 @@ module Rbrun
             sudo chown -R #{user}:#{user} /home/#{user}/.kube
             chmod 600 /home/#{user}/.kube/config
           BASH
+        end
+
+        def deploy_priority_classes!
+          log_step("deploy_priority_classes")
+          apply_manifest!(Resources.priority_class_yaml)
         end
 
         def deploy_registry!

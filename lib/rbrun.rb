@@ -26,6 +26,7 @@ require "rbrun/providers/scaleway/client"
 
 # Kubernetes
 require "rbrun/kubernetes/kubectl"
+require "rbrun/kubernetes/resources"
 require "rbrun/kubernetes/k3s_installer"
 require "rbrun/kubernetes/docker_builder"
 

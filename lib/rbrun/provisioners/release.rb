@@ -198,26 +198,65 @@ module Rbrun
             labels: { purpose: "release" }
           )
 
-          unless volume.server_id == server.id
+          # Attach if not attached to this server
+          if volume.server_id.to_s != server.id.to_s
             compute_client.attach_volume(volume_id: volume.id, server_id: server.id)
-            sleep 5
           end
 
-          mount_volume!(mount_path)
+          # Wait for device path from API
+          device_path = wait_for_device_path!(volume.id)
+
+          # Wait for device to be available on server
+          wait_for_device!(device_path)
+
+          # Mount volume
+          mount_volume!(device_path, mount_path)
         end
 
-        def mount_volume!(mount_path)
-          run_ssh!(<<~BASH, raise_on_error: false)
-            sudo mkdir -p #{mount_path}
-            DEVICE=$(lsblk -rno NAME,TYPE | grep disk | grep -v sda | head -1 | awk '{print "/dev/"$1}')
-            if [ -n "$DEVICE" ] && ! sudo mountpoint -q #{mount_path}; then
-              if ! sudo blkid $DEVICE; then
-                sudo mkfs.xfs $DEVICE
-              fi
-              sudo mount $DEVICE #{mount_path}
-              echo "$DEVICE #{mount_path} xfs defaults 0 0" | sudo tee -a /etc/fstab
-            fi
-          BASH
+        def wait_for_device_path!(volume_id)
+          30.times do
+            volume = compute_client.get_volume(volume_id)
+            return volume.device_path if volume.device_path.present?
+            sleep 2
+          end
+          raise "Volume #{volume_id} has no device path after attachment"
+        end
+
+        def wait_for_device!(device_path)
+          30.times do
+            result = run_ssh!("test -b #{device_path} && echo 'ready' || true", raise_on_error: false)
+            return if result.output.include?("ready")
+            sleep 2
+          end
+          raise "Device #{device_path} not available on server"
+        end
+
+        def mount_volume!(device_path, mount_path)
+          # Check if already mounted
+          result = run_ssh!("mountpoint -q #{mount_path} && echo 'mounted' || echo 'not'", raise_on_error: false)
+          return if result.output.include?("mounted")
+
+          # Create mount point
+          run_ssh!("sudo mkdir -p #{mount_path}")
+
+          # Format if no filesystem
+          fs_check = run_ssh!("sudo blkid #{device_path} || true", raise_on_error: false)
+          unless fs_check.output.include?("TYPE=")
+            run_ssh!("sudo mkfs.xfs #{device_path}")
+          end
+
+          # Mount
+          run_ssh!("sudo mount #{device_path} #{mount_path}")
+
+          # Add to fstab using UUID (reliable)
+          fstab_check = run_ssh!("grep '#{mount_path}' /etc/fstab || true", raise_on_error: false)
+          unless fstab_check.output.include?(mount_path)
+            run_ssh!("UUID=$(sudo blkid -s UUID -o value #{device_path}) && echo \"UUID=$UUID #{mount_path} xfs defaults,nofail 0 2\" | sudo tee -a /etc/fstab")
+          end
+
+          # Verify
+          verify = run_ssh!("mountpoint -q #{mount_path} && echo 'ok' || echo 'fail'", raise_on_error: false)
+          raise "Volume not mounted at #{mount_path}" unless verify.output.include?("ok")
         end
 
         def cleanup_volumes!

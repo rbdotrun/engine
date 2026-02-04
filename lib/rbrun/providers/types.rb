@@ -59,6 +59,7 @@ module Rbrun
         :status,      # String - "available", "attached", etc.
         :server_id,   # String|nil - attached server ID
         :location,    # String - datacenter/zone
+        :device_path, # String|nil - linux device path (e.g. /dev/sdb)
         :created_at,  # String - ISO8601 timestamp
         keyword_init: true
       )

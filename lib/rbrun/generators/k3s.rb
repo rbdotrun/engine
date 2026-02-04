@@ -103,6 +103,7 @@ module Rbrun
             deployment(
               name:,
               replicas: 1,
+              priority_class: Kubernetes::Resources.priority_class_for(:database),
               containers: [{
                 name: "postgres",
                 image: db_config.image,
@@ -114,7 +115,8 @@ module Rbrun
                   { name: "PGDATA", value: "/var/lib/postgresql/data/pgdata" }
                 ],
                 volumeMounts: [{ name: "data", mountPath: "/var/lib/postgresql/data" }],
-                readinessProbe: { exec: { command: ["pg_isready", "-U", pg_user] }, initialDelaySeconds: 5, periodSeconds: 5 }
+                readinessProbe: { exec: { command: ["pg_isready", "-U", pg_user] }, initialDelaySeconds: 5, periodSeconds: 5 },
+                resources: Kubernetes::Resources.for(:database)
               }],
               volumes: [host_path_volume("data", "/mnt/data/#{name}")]
             ),
@@ -129,11 +131,13 @@ module Rbrun
             deployment(
               name:,
               replicas: 1,
+              priority_class: Kubernetes::Resources.priority_class_for(:database),
               containers: [{
                 name: "redis",
                 image: db_config.image,
                 ports: [{ containerPort: 6379 }],
-                volumeMounts: [{ name: "data", mountPath: "/data" }]
+                volumeMounts: [{ name: "data", mountPath: "/data" }],
+                resources: Kubernetes::Resources.for(:database)
               }],
               volumes: [host_path_volume("data", "/mnt/data/#{name}")]
             ),
@@ -169,7 +173,8 @@ module Rbrun
           container = {
             name: name.to_s,
             image: svc_config.image,
-            ports: svc_config.port ? [{ containerPort: svc_config.port }] : []
+            ports: svc_config.port ? [{ containerPort: svc_config.port }] : [],
+            resources: Kubernetes::Resources.for(:platform)
           }
 
           # Reference service's own secret for env vars
@@ -180,6 +185,7 @@ module Rbrun
           manifests << deployment(
             name: deployment_name,
             replicas: 1,
+            priority_class: Kubernetes::Resources.priority_class_for(:platform),
             containers: [container.compact]
           )
 
@@ -218,7 +224,8 @@ module Rbrun
           container = {
             name: name.to_s,
             image: @registry_tag,
-            envFrom: [{ secretRef: { name: "#{@prefix}-app-secret" } }]
+            envFrom: [{ secretRef: { name: "#{@prefix}-app-secret" } }],
+            resources: Kubernetes::Resources.for(:small)
           }
 
           container[:command] = ["/bin/sh", "-c", process.command] if process.command
@@ -234,7 +241,7 @@ module Rbrun
             }
           end
 
-          manifests << deployment(name: deployment_name, replicas:, containers: [container])
+          manifests << deployment(name: deployment_name, replicas:, priority_class: Kubernetes::Resources.priority_class_for(:app), containers: [container])
 
           if process.port
             manifests << service(name: deployment_name, port: process.port)
@@ -258,10 +265,12 @@ module Rbrun
             name:,
             replicas: 1,
             host_network: true,
+            priority_class: Kubernetes::Resources.priority_class_for(:platform),
             containers: [{
               name: "cloudflared",
               image: "cloudflare/cloudflared:latest",
-              args: ["tunnel", "--no-autoupdate", "run", "--token", @tunnel_token]
+              args: ["tunnel", "--no-autoupdate", "run", "--token", @tunnel_token],
+              resources: Kubernetes::Resources.for(:platform)
             }]
           )
         end
@@ -286,10 +295,11 @@ module Rbrun
           }
         end
 
-        def deployment(name:, containers:, volumes: [], replicas: 1, host_network: false)
+        def deployment(name:, containers:, volumes: [], replicas: 1, host_network: false, priority_class: nil)
           spec = { containers: }
           spec[:volumes] = volumes if volumes.any?
           spec[:hostNetwork] = true if host_network
+          spec[:priorityClassName] = priority_class if priority_class
 
           {
             apiVersion: "apps/v1",

@@ -449,6 +449,7 @@ module Rbrun
               status: data["status"],
               server_id: data["server"]&.to_s,
               location: data["location"]["name"],
+              device_path: data["linux_device"],
               created_at: data["created"]
             )
           end
