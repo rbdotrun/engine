@@ -46,9 +46,9 @@ module Rbrun
         release = find_release_with_infra!
         abort "No server IP" unless release.server_ip
 
-        # Use configured SSH key
+        # Interactive SSH requires actual ssh binary (Net::SSH doesn't handle TTY well)
         key_path = File.expand_path(Rbrun.configuration.compute_config.ssh_key_path)
-        Kernel.exec "ssh -i #{key_path} -o StrictHostKeyChecking=no deploy@#{release.server_ip}"
+        system("ssh", "-i", key_path, "-o", "StrictHostKeyChecking=no", "deploy@#{release.server_ip}")
       end
 
       desc "logs", "Show pod logs"

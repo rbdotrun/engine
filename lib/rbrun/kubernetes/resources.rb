@@ -36,8 +36,8 @@ module Rbrun
 
         # App processes by size
         small: {
-          requests: { memory: "128Mi", cpu: "100m" },
-          limits:   { memory: "256Mi" }
+          requests: { memory: "256Mi", cpu: "100m" },
+          limits:   { memory: "512Mi" }
         },
         medium: {
           requests: { memory: "256Mi", cpu: "200m" },
