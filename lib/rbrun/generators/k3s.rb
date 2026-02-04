@@ -225,7 +225,7 @@ module Rbrun
           container[:ports] = [{ containerPort: process.port }] if process.port
 
           if process.port
-            http_get = { path: "/", port: process.port }
+            http_get = { path: "/up", port: process.port }
             http_get[:httpHeaders] = [{ name: "Host", value: "#{subdomain}.#{@zone}" }] if subdomain && @zone
             container[:readinessProbe] = {
               httpGet: http_get,

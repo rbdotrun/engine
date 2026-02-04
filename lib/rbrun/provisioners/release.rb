@@ -118,12 +118,10 @@ module Rbrun
         end
 
         def create_firewall!
+          # SSH from anywhere, K3s API from private network only
           rules = [
             { direction: "in", protocol: "tcp", port: "22", source_ips: ["0.0.0.0/0", "::/0"] },
-            { direction: "in", protocol: "tcp", port: "80", source_ips: ["0.0.0.0/0", "::/0"] },
-            { direction: "in", protocol: "tcp", port: "443", source_ips: ["0.0.0.0/0", "::/0"] },
-            { direction: "in", protocol: "tcp", port: "30080", source_ips: ["0.0.0.0/0", "::/0"] },
-            { direction: "in", protocol: "tcp", port: "6443", source_ips: ["0.0.0.0/0", "::/0"] }
+            { direction: "in", protocol: "tcp", port: "6443", source_ips: ["10.0.0.0/16"] }
           ]
           compute_client.find_or_create_firewall(prefix, rules:)
         end

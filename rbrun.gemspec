@@ -5,12 +5,11 @@ Gem::Specification.new do |spec|
   spec.version     = Rbrun::VERSION
   spec.authors     = [ "Ben" ]
   spec.email       = [ "ben@dee.mx" ]
-  spec.homepage    = "https://github.com/rbrun/rbrun"
+  spec.homepage    = "https://github.com/rbdotrun/engine"
   spec.summary     = "Ephemeral cloud development environments for Rails apps"
   spec.description = "A Rails engine for provisioning Hetzner VMs with Cloudflare Tunnel preview URLs"
   spec.license     = "MIT"
 
-  spec.metadata["allowed_push_host"] = "https://rubygems.org"
   spec.metadata["homepage_uri"] = spec.homepage
   spec.metadata["source_code_uri"] = spec.homepage
   spec.metadata["changelog_uri"] = "#{spec.homepage}/blob/main/CHANGELOG.md"
