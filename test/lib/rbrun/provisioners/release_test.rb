@@ -113,13 +113,24 @@ module Rbrun
       # Provision/Redeploy Tests
       # ─────────────────────────────────────────────────────────────
 
-      test "provision! skips if already deployed" do
+      test "provision! skips infrastructure if already deployed but still applies manifests" do
         @release.update!(state: "deployed")
 
-        # Should not call any provisioning methods
-        @provisioner.stub(:create_infrastructure!, -> { raise "should not be called" }) do
-          @provisioner.provision! # Should return early, not raise
+        infra_called = false
+        deploy_called = false
+
+        @provisioner.stub(:create_infrastructure!, -> { infra_called = true }) do
+          @provisioner.stub(:build_and_push_image!, -> {}) do
+            @provisioner.stub(:deploy_kubernetes!, -> { deploy_called = true }) do
+              @provisioner.stub(:wait_for_rollout!, -> {}) do
+                @provisioner.provision!
+              end
+            end
+          end
         end
+
+        refute infra_called, "create_infrastructure! should NOT be called when deployed"
+        assert deploy_called, "deploy_kubernetes! should ALWAYS be called (idempotent)"
       end
 
       test "redeploy! raises if not deployed" do
