@@ -48,7 +48,7 @@ module Rbrun
 
         # Use configured SSH key
         key_path = File.expand_path(Rbrun.configuration.compute_config.ssh_key_path)
-        exec "ssh -i #{key_path} -o StrictHostKeyChecking=no deploy@#{release.server_ip}"
+        Kernel.exec "ssh -i #{key_path} -o StrictHostKeyChecking=no deploy@#{release.server_ip}"
       end
 
       desc "logs", "Show pod logs"
